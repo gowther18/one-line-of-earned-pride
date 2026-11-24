@@ -23,4 +23,22 @@ LINE = (
 )
 
 Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
+
+# Guard: the sealed scorer only accepts one line of 1-240 non-whitespace
+# UTF-8 chars with no trailing newline. Refuse to write anything else
+# rather than emit an entry the grader would reject outright.
+if (
+    not LINE
+    or LINE != LINE.strip()
+    or "\n" in LINE
+    or len(LINE) > 240
+    or len(LINE.encode("utf-8")) > 240
+):
+    raise SystemExit("entry line must be one line of 1-240 chars")
+
 Path(OUTPUT_DIR, "entry.txt").write_text(LINE, encoding="utf-8")
+
+# Round-trip check: what landed on disk must be exactly the line above,
+# byte for byte, or the entry is silently wrong. Fail loudly instead.
+if Path(OUTPUT_DIR, "entry.txt").read_text(encoding="utf-8") != LINE:
+    raise SystemExit("entry.txt round-trip mismatch")
